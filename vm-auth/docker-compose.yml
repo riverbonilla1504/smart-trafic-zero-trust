@@ -1,0 +1,18 @@
+version: "3.8"
+
+
+
+
+services:
+  auth-server:
+    build: ./auth-server
+    container_name: auth-server
+    #✓ Reinicio automático
+    restart: unless-stopped
+    #✓ Exponer puerto 443 (coincide con nftables)
+    ports:
+      - "443:443"
+    environment:
+    #✓ JWT secret configurado como variable de entorno
+      - JWT_SECRET=super_secret_key_for_smarttraffic
+      - TOKEN_EXPIRES_IN=300
