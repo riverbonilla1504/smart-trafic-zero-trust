@@ -8,6 +8,7 @@ services:
     ports:
       - "9092:9092"   # Puerto externo para los microservicios
     environment:
+      KAFKA_HEAP_OPTS: "-Xmx512M -Xms512M"
       # --- KRaft (sin ZooKeeper) ---
       CLUSTER_ID: "Jc83HgZES8Opf-6cxduOJg"
       KAFKA_NODE_ID: 1
