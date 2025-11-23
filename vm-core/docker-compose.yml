@@ -1,0 +1,25 @@
+services:
+  traffic_density_processor:
+    build: ./traffic_density_processor
+    container_name: traffic_density_processor
+    restart: unless-stopped
+    environment:
+      # ---- AUTH / JWT ----
+      AUTH_JWT_SECRET: "super_secret_key_for_smarttraffic"   # debe coincidir con el secreto que usa vm-auth
+
+      # ---- KAFKA ----
+      KAFKA_BOOTSTRAP_SERVERS: "10.0.1.139:9092" # Kafka virtual en la VM data
+      KAFKA_TOPIC_IN: "traffic_raw_events" # Tema de Kafka donde se envían los eventos
+      KAFKA_GROUP_ID: "traffic-density-processor" # Grupo de Kafka donde se procesan los eventos
+
+      # ---- RABBITMQ ----
+      RABBITMQ_URL: "amqp://smart:smartpassword@10.0.1.139:5672" # URL de RabbitMQ virtual en la VM data
+      RABBITMQ_EXCHANGE: "traffic.events" # Exchange de RabbitMQ donde se envían los eventos
+      RABBITMQ_EXCHANGE_TYPE: "topic" # Tipo de exchange de RabbitMQ
+
+    networks:
+      - core_net
+
+networks:
+  core_net:
+    driver: bridge
