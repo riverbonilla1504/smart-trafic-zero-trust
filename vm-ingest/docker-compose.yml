@@ -1,0 +1,31 @@
+services:
+  traffic_sensor_simulator:
+    build: ./traffic_sensor_simulator
+    container_name: traffic_sensor_simulator
+    restart: unless-stopped
+    environment:
+      # ---- AUTH ----
+      AUTH_URL: "https://10.0.1.154/token"
+      AUTH_CLIENT_ID: "sensor"
+      AUTH_CLIENT_SECRET: "sensor123"
+      AUTH_TLS_VERIFY: "false"          # toca que no lo verifique porque es self-signed
+
+      # ---- KAFKA ----
+      KAFKA_BOOTSTRAP_SERVERS: "10.0.1.139:9092" # Kafka virtual en la VM data
+      KAFKA_TOPIC: "traffic_raw_events" # Tema de Kafka donde se envían los eventos
+
+      # ---- SENSOR CONFIG ----
+      SENSOR_ID: "sensor-avenida-1" # ID del sensor
+      SENSOR_LOCATION: "Avenida Principal Pasto" # Ubicación del sensor
+      SEND_INTERVAL_SECONDS: "2" # Intervalo de envío de eventos
+      EVENTS_PER_BATCH: "5" # Número de eventos por batch
+
+      # Para ignorar cert self-signed en desarrollo
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
+    networks:
+      - ingest_net
+
+networks:
+  ingest_net:
+    driver: bridge 
