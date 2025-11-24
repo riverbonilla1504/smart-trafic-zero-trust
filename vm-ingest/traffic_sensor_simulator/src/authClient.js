@@ -13,23 +13,31 @@ class AuthClient {
             return cachedToken;
         }
 
+        // Request a token from the auth server
         const resp = await axios.post(settings.authUrl, {
             client_id: settings.authClientId,
             client_secret: settings.authClientSecret,
         });
 
+        // Get the token from the response
         const token = resp.data.access_token;
-        if (!token) throw new Error("Auth no devolvió access_token");
+        // Check if the token is present
+        if (!token) throw new Error("Auth did not return access_token");
 
-        // Decodificar el payload para leer exp
+        // Decode the payload to read exp
         const [, payloadB64] = token.split(".");
+        // Parse the payload
         const payloadJson = Buffer.from(payloadB64, "base64").toString("utf8");
+        // Parse the payload
         const payload = JSON.parse(payloadJson);
 
+        // Cache the token
         cachedToken = token;
+        // Cache the expiration
         cachedExp = payload.exp;
 
-        console.log("[AUTH] Nuevo token cacheado. Exp:", new Date(cachedExp * 1000).toISOString());
+        // Log the new token cached and the expiration
+        console.log("[AUTH] New token cached. Exp:", new Date(cachedExp * 1000).toISOString());
 
         return token;
     }
