@@ -15,4 +15,4 @@ services:
     environment:
     #✓ JWT secret configurado como variable de entorno
       - JWT_SECRET=super_secret_key_for_smarttraffic
-      - TOKEN_EXPIRES_IN=300
+      - TOKEN_EXPIRES_IN=3600
