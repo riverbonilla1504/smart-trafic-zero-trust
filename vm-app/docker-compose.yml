@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  alert_dispatcher:
+    build: ./alert_dispatcher
+    container_name: alert_dispatcher
+    restart: unless-stopped
+    depends_on:
+      - user_dashboard_backend
+    networks:
+      - appnet
+
+  user_dashboard_backend:
+    build: ./user_dashboard_backend
+    container_name: user_dashboard_backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - appnet
+
+  query_client:
+    build: ./query_client
+    container_name: query_client
+    restart: unless-stopped
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge

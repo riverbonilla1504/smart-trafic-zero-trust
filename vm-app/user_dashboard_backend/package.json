@@ -1,0 +1,14 @@
+{
+    "name": "user_dashboard_backend",
+    "version": "1.0.0",
+    "description": "User dashboard backend microservice",
+    "main": "src/index.js",
+    "scripts": {
+        "start": "node src/index.js"
+    },
+    "dependencies": {
+        "express": "^4.19.2",
+        "http": "^1.1.0",
+        "ws": "^8.18.0"
+    }
+}
