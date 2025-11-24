@@ -11,6 +11,9 @@ COPY node_modules ./node_modules
 # Copiamos el resto del código y los certificados
 COPY . .
 
+COPY key.pem ./key.pem
+COPY cert.pem ./cert.pem
+
 EXPOSE 443
 
 CMD ["node", "server.js"]
