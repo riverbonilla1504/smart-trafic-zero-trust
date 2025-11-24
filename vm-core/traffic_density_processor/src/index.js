@@ -30,7 +30,7 @@ async function main() {
 
     await consumer.subscribe({
         topic: settings.kafkaTopicIn,
-        fromBeginning: true
+        fromBeginning: false
     });
 
     console.log("[CORE] Suscrito a topic:", settings.kafkaTopicIn);
