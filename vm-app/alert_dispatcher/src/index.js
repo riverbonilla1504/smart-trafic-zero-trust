@@ -10,7 +10,7 @@ async function main() {
     console.log("[DISPATCHER] Token obtenido");
 
     const { ch } = await connectRabbit("amqp://smart:smartpassword@10.0.1.139");
-    await channel.assertExchange("traffic.events", "topic", { durable: true });
+    await ch.assertExchange("traffic.events", "topic", { durable: true });
 
 
     await ch.assertQueue("alerts", { durable: false });
