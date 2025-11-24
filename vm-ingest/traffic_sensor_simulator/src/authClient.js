@@ -1,38 +1,37 @@
-// src/authClient.js
 const axios = require("axios");
 const { settings } = require("./config");
 
-class AuthClient {
-    constructor() {
-        this.token = null;
-    }
+let cachedToken = null;
+let cachedExp = 0; // timestamp en segundos
 
+class AuthClient {
     async getToken() {
-        const payload = {
+        const now = Date.now() / 1000;
+
+        // Si tenemos token y faltan > 60s para expirar, lo reutilizamos
+        if (cachedToken && now < cachedExp - 60) {
+            return cachedToken;
+        }
+
+        const resp = await axios.post(settings.authUrl, {
             client_id: settings.authClientId,
             client_secret: settings.authClientSecret,
-        };
+        });
 
-        console.log(`[AUTH] Solicitando token a ${settings.authUrl}`);
+        const token = resp.data.access_token;
+        if (!token) throw new Error("Auth no devolvió access_token");
 
-        try {
-            const resp = await axios.post(settings.authUrl, payload, {
-                // En dev, NODE_TLS_REJECT_UNAUTHORIZED=0 ya saltará la verificación
-                timeout: 5000,
-            });
+        // Decodificar el payload para leer exp
+        const [, payloadB64] = token.split(".");
+        const payloadJson = Buffer.from(payloadB64, "base64").toString("utf8");
+        const payload = JSON.parse(payloadJson);
 
-            const accessToken = resp.data.access_token;
-            if (!accessToken) {
-                throw new Error("La respuesta de auth no tiene access_token");
-            }
+        cachedToken = token;
+        cachedExp = payload.exp;
 
-            this.token = accessToken;
-            console.log("[AUTH] Token obtenido correctamente");
-            return this.token;
-        } catch (err) {
-            console.error("[AUTH] Error obteniendo token:", err.message);
-            throw err;
-        }
+        console.log("[AUTH] Nuevo token cacheado. Exp:", new Date(cachedExp * 1000).toISOString());
+
+        return token;
     }
 }
 
