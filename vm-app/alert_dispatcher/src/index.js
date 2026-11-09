@@ -13,7 +13,7 @@ async function main() {
     console.log("[DISPATCHER] Token obtenido");
 
     // Connect to RabbitMQ.
-    const { ch } = await connectRabbit("amqp://smart:smartpassword@10.0.1.139");
+    const { ch } = await connectRabbit(process.env.RABBITMQ_URL);
     // Create the traffic.events exchange.
     await ch.assertExchange("traffic.events", "topic", { durable: true });
 
@@ -48,4 +48,7 @@ async function main() {
     }, { noAck: true });
 }
 
-main();
+main().catch((err) => {
+    console.error("[DISPATCHER] Error fatal:", err.message);
+    process.exit(1);
+});

@@ -5,7 +5,7 @@ async function main() {
     console.log("[QUERY] Iniciando query_client...");
 
     // Connect to RabbitMQ.
-    const conn = await amqp.connect("amqp://smart:smartpassword@10.0.1.139");
+    const conn = await amqp.connect(process.env.RABBITMQ_URL);
     // Create a channel.
     const ch = await conn.createChannel();
 
@@ -25,4 +25,7 @@ async function main() {
     }, { noAck: true });
 }
 
-main();
+main().catch((err) => {
+    console.error("[QUERY] Error fatal:", err.message);
+    process.exit(1);
+});

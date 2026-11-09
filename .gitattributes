@@ -1,0 +1,4 @@
+# Los scripts y configuraciones se ejecutan en Linux: siempre LF.
+* text=auto eol=lf
+*.pdf binary
+*.png binary

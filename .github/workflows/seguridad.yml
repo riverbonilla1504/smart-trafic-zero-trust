@@ -1,0 +1,87 @@
+# Clase 7 (DevSecOps): cada push construye las imagenes y las analiza con Trivy.
+# Si encuentra una vulnerabilidad critica o alta con parche disponible, el pipeline falla.
+name: DevSecOps Pipeline
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Secretos y configuracion insegura en el codigo (SAST / IaC).
+  repo-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Secretos y dependencias en el repositorio
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          skip-dirs: docs-clases
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+      - name: Configuracion de Dockerfiles y compose
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+
+  # Imagenes propias: bloquean el pipeline.
+  image-scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - vm-auth/auth-server
+          - vm-ingest/traffic_sensor_simulator
+          - vm-core/traffic_density_processor
+          - vm-app/alert_dispatcher
+          - vm-app/query_client
+          - vm-app/user_dashboard_backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Construir imagen
+        run: docker build -t smarttraffic-scan:latest "${{ matrix.service }}"
+
+      - name: Escaneo Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: smarttraffic-scan:latest
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+  # Imagenes de terceros (Kafka, RabbitMQ, Nginx): se informan, pero no bloquean,
+  # porque su correccion depende del proveedor.
+  third-party-scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - confluentinc/cp-kafka:7.9.2
+          - rabbitmq:4.1-management
+          - nginxinc/nginx-unprivileged:1.29-alpine
+    steps:
+      - name: Escaneo Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ matrix.image }}
+          format: table
+          exit-code: "0"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true

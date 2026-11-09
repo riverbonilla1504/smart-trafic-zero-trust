@@ -1,12 +1,16 @@
-version: '3.8'
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   kafka:
-    image: confluentinc/cp-kafka:7.6.1
+    image: confluentinc/cp-kafka:7.9.2
     container_name: kafka
     restart: unless-stopped
     ports:
-      - "9092:9092"   # Puerto externo para los microservicios
+      - "10.0.5.10:9092:9092" # Solo en la IP privada, con TLS mutuo
     environment:
       KAFKA_HEAP_OPTS: "-Xmx512M -Xms512M"
       # --- KRaft (sin ZooKeeper) ---
@@ -16,46 +20,63 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
 
-      # Configura los listeners de Kafka:
-      # - INTERNAL: para comunicación interna entre contenedores Docker
-      # - EXTERNAL: para permitir el acceso de otras VMs al broker (por ejemplo, desde vm-core)
-      # - CONTROLLER: necesario para el rol de controller en KRaft (sin ZooKeeper)
+      # Listeners de Kafka:
+      # - INTERNAL y CONTROLLER: solo dentro de la red de Docker de esta maquina
+      # - EXTERNAL: acceso desde otras VMs, cifrado y con certificado de cliente obligatorio
       KAFKA_LISTENERS: "INTERNAL://kafka:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://kafka:9093"
-      # Anuncia las direcciones donde el broker Kafka puede ser contactado por los clientes:
-      # INTERNAL (acceso interno Docker), EXTERNAL (acceso desde la red, aquí la IP privada de la VM)
-      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka:29092,EXTERNAL://10.0.1.139:9092"
-      # Mapea cada listener al protocolo PLAINTEXT (sin autenticación/SSL)
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
-      # Especifica que los brokers se comunicarán entre sí usando el listener INTERNAL
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka:29092,EXTERNAL://10.0.5.10:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:SSL,CONTROLLER:PLAINTEXT"
       KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
 
-      # --- Configuración de un solo nodo ---
-      # Factor de replicación para los offsets
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      # Factor de replicación para los transacciones
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      # Factor de replicación para los logs de transacciones
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      # --- TLS mutuo en el listener EXTERNAL ---
+      KAFKA_SSL_KEYSTORE_TYPE: "PEM"
+      KAFKA_SSL_KEYSTORE_LOCATION: "/etc/kafka/tls/keystore.pem"
+      KAFKA_SSL_TRUSTSTORE_TYPE: "PEM"
+      KAFKA_SSL_TRUSTSTORE_LOCATION: "/etc/kafka/tls/ca.pem"
+      KAFKA_SSL_CLIENT_AUTH: "required"
 
+      # --- Configuración de un solo nodo ---
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # El disco es limitado: conservar 48 h de eventos.
+      KAFKA_LOG_RETENTION_HOURS: 48
     volumes:
-      - ./kafka-data:/var/lib/kafka/data
+      - kafka-data:/var/lib/kafka/data
+      - ./secrets/kafka:/etc/kafka/tls:ro
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    logging: *logging
     networks:
       - backend
 
   rabbitmq:
-    image: rabbitmq:3.13-management
+    image: rabbitmq:4.1-management
     container_name: rabbitmq
     restart: unless-stopped
     ports:
-      - "5672:5672"    # AMQP, para microservicios
-      - "15672:15672"  # Panel web (podemos verlo por túnel SSH)
+      - "10.0.5.10:5671:5671"       # AMQP con TLS, solo en la IP privada
+      - "127.0.0.1:15672:15672"     # Panel web: solo por túnel SSH
     environment:
-      # RabbitMQ default user
-      - RABBITMQ_DEFAULT_USER=smart
-      # RabbitMQ default password
-      - RABBITMQ_DEFAULT_PASS=smartpassword
+      # Administrador; los servicios usan usuarios propios con permisos mínimos.
+      RABBITMQ_DEFAULT_USER: "admin"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_ADMIN_PASSWORD:?falta en .env}"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/conf.d/90-smarttraffic.conf:ro
+      - ./secrets/rabbitmq:/etc/rabbitmq/tls:ro
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 640m
+    logging: *logging
     networks:
       - backend
+
+volumes:
+  kafka-data:
+  rabbitmq-data:
 
 networks:
   backend:

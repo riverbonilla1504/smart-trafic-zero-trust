@@ -21,11 +21,11 @@ async function main() {
     // Log the starting of the traffic density processor
     console.log("[CORE] Starting traffic_density_processor");
     // Log the configuration
+    // La URL de RabbitMQ no se registra porque contiene la contrasena.
     console.log("[CORE] Config:", {
         kafkaBootstrapServers: settings.kafkaBootstrapServers,
         kafkaTopicIn: settings.kafkaTopicIn,
         kafkaGroupId: settings.kafkaGroupId,
-        rabbitUrl: settings.rabbitUrl,
         rabbitExchange: settings.rabbitExchange
     });
 

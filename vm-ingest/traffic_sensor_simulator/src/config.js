@@ -5,11 +5,14 @@ const settings = {
     authUrl: process.env.AUTH_URL, // URL del servidor de autenticación
     authClientId: process.env.AUTH_CLIENT_ID,
     authClientSecret: process.env.AUTH_CLIENT_SECRET,
-    authTlsVerify: (process.env.AUTH_TLS_VERIFY || "false").toLowerCase() === "true",
 
     kafkaBootstrapServers: process.env.KAFKA_BOOTSTRAP_SERVERS, // Servidores de Kafka
     kafkaTopic: process.env.KAFKA_TOPIC, // Tema de Kafka donde se envían los eventos
     kafkaClientId: process.env.KAFKA_CLIENT_ID || "traffic-sensor-simulator", // Client ID para Kafka
+    // Certificados de TLS mutuo con Kafka
+    kafkaCaFile: process.env.KAFKA_CA_FILE,
+    kafkaCertFile: process.env.KAFKA_CERT_FILE,
+    kafkaKeyFile: process.env.KAFKA_KEY_FILE,
 
     sensorId: process.env.SENSOR_ID || "sensor-1",
     sensorLocation: process.env.SENSOR_LOCATION || "Unknown",

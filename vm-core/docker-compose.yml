@@ -1,25 +1,39 @@
 services:
   traffic_density_processor:
     build: ./traffic_density_processor
+    image: smarttraffic/processor:local
     container_name: traffic_density_processor
     restart: unless-stopped
     environment:
       # ---- AUTH / JWT ----
-      AUTH_JWT_SECRET: "super_secret_key_for_smarttraffic"   # debe coincidir con el secreto que usa vm-auth
+      AUTH_JWT_PUBLIC_KEY_FILE: "/run/app-secrets/jwt-public.pem"
 
       # ---- KAFKA ----
-      KAFKA_BOOTSTRAP_SERVERS: "10.0.1.139:9092" # Kafka virtual en la VM data
+      KAFKA_BOOTSTRAP_SERVERS: "10.0.5.10:9092" # Broker en vm-data, con TLS mutuo
       KAFKA_TOPIC_IN: "traffic_raw_events" # Tema de Kafka donde se envían los eventos
       KAFKA_GROUP_ID: "traffic-density-processor" # Grupo de Kafka donde se procesan los eventos
+      KAFKA_CA_FILE: "/run/app-secrets/ca.pem"
+      KAFKA_CERT_FILE: "/run/app-secrets/kafka-client.crt"
+      KAFKA_KEY_FILE: "/run/app-secrets/kafka-client.key"
 
       # ---- RABBITMQ ----
-      RABBITMQ_URL: "amqp://smart:smartpassword@10.0.1.139:5672" # URL de RabbitMQ virtual en la VM data
+      RABBITMQ_URL: "amqps://core:${RABBITMQ_CORE_PASSWORD:?falta en .env}@10.0.5.10:5671" # RabbitMQ con TLS en vm-data
       RABBITMQ_EXCHANGE: "traffic.events" # Exchange de RabbitMQ donde se envían los eventos
       RABBITMQ_EXCHANGE_TYPE: "topic" # Tipo de exchange de RabbitMQ
-
-    networks:
-      - core_net
-
-networks:
-  core_net:
-    driver: bridge
+      NODE_EXTRA_CA_CERTS: "/run/app-secrets/ca.pem"
+    volumes:
+      - ./secrets:/run/app-secrets:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    pids_limit: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

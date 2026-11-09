@@ -1,21 +1,14 @@
-FROM node:18-alpine
-
+# Clase 7 (DevSecOps): imagen actualizada, sin npm en produccion y sin root.
+FROM node:22-alpine AS build
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Copy the package.json only as a reference
-COPY package.json package-lock.json* ./
-
-# Copy the node_modules already installed on the VM
-COPY node_modules ./node_modules
-
-# Copy the rest of the code and the certificates
-COPY . .
-
-# Copy the key.pem and cert.pem files
-COPY key.pem ./key.pem
-COPY cert.pem ./cert.pem
-
-# Expose the port 443
-EXPOSE 443
-
+FROM node:22-alpine
+RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /opt/yarn*
+WORKDIR /app
+COPY --from=build /app/node_modules ./node_modules
+COPY package.json server.js ./
+USER node
+EXPOSE 8443
 CMD ["node", "server.js"]

@@ -1,18 +1,26 @@
-version: "3.8"
-
-
-
-
 services:
   auth-server:
     build: ./auth-server
+    image: smarttraffic/auth-server:local
     container_name: auth-server
-    # Auto restart
     restart: unless-stopped
-    # Expose port 443 (matches nftables)
     ports:
-      - "443:443"
+      - "443:8443"
     environment:
-    # JWT secret configured as an environment variable
-      - JWT_SECRET=super_secret_key_for_smarttraffic
-      - TOKEN_EXPIRES_IN=3600
+      TOKEN_EXPIRES_IN: "300"
+    volumes:
+      - ./secrets:/run/app-secrets:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    pids_limit: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

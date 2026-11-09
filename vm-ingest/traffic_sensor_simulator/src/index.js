@@ -11,14 +11,20 @@ async function main() {
     const authClient = new AuthClient();
     const producer = new KafkaTrafficProducer();
 
-    // 1. Obtener token
-    const token = await authClient.getToken();
-
-    // 2. Conectar producer Kafka
+    // 1. Conectar producer Kafka
     await producer.connect();
 
-    // 3. Loop principal
+    // 2. Loop principal
     async function sendBatch() {
+        // AuthClient reutiliza el token y pide otro antes de que caduque.
+        let token;
+        try {
+            token = await authClient.getToken();
+        } catch (err) {
+            console.error("[APP] No se pudo obtener token; batch omitido:", err.message);
+            return;
+        }
+
         console.log(`[APP] Enviando batch de ${settings.eventsPerBatch} eventos...`);
 
         for (let i = 0; i < settings.eventsPerBatch; i++) {
@@ -26,7 +32,7 @@ async function main() {
 
             const payload = {
                 auth: {
-                    token, // aquí va el JWT que vm-core/usará luego para validar
+                    token, // aquí va el JWT que vm-core valida
                 },
                 event,
             };

@@ -12,3 +12,13 @@
 /var/log/nginx/error.log
 /var/log/nginx/access.log.1
 /var/log/nginx/error.log.1
+
+# Claves SSH/TLS y credenciales: nunca al repo
+/keys/
+/infra/generated/
+**/secrets/
+*.pem
+*.key
+.env
+# Material de clase: no se publica
+/docs-clases/

@@ -2,11 +2,11 @@ const axios = require("axios");
 
 async function getToken() {
     // Request a token from the auth server using client credentials.
-    const res = await axios.post(
-        "https://10.0.1.154/token",
-        { client_id: "dispatcher", client_secret: "dispatcher123" },
-        { httpsAgent: new (require("https").Agent)({ rejectUnauthorized: false }) }
-    );
+    // El certificado se verifica contra la CA interna (NODE_EXTRA_CA_CERTS).
+    const res = await axios.post(process.env.AUTH_URL, {
+        client_id: process.env.AUTH_CLIENT_ID,
+        client_secret: process.env.AUTH_CLIENT_SECRET,
+    });
     // Return the access token from the response.
     return res.data.access_token;
 }

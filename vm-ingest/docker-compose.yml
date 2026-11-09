@@ -1,31 +1,42 @@
 services:
   traffic_sensor_simulator:
     build: ./traffic_sensor_simulator
+    image: smarttraffic/sensor:local
     container_name: traffic_sensor_simulator
     restart: unless-stopped
     environment:
       # ---- AUTH ----
-      AUTH_URL: "https://10.0.1.154/token"
+      AUTH_URL: "https://10.0.2.10/token"
       AUTH_CLIENT_ID: "sensor"
-      AUTH_CLIENT_SECRET: "sensor123"
-      AUTH_TLS_VERIFY: "false"          # toca que no lo verifique porque es self-signed
+      AUTH_CLIENT_SECRET: "${AUTH_CLIENT_SECRET:?falta en .env}"
+      # Confia solo en la CA interna: el certificado del servidor si se verifica
+      NODE_EXTRA_CA_CERTS: "/run/app-secrets/ca.pem"
 
       # ---- KAFKA ----
-      KAFKA_BOOTSTRAP_SERVERS: "10.0.1.139:9092" # Kafka virtual en la VM data
+      KAFKA_BOOTSTRAP_SERVERS: "10.0.5.10:9092" # Broker en vm-data, con TLS mutuo
       KAFKA_TOPIC: "traffic_raw_events" # Tema de Kafka donde se envían los eventos
+      KAFKA_CA_FILE: "/run/app-secrets/ca.pem"
+      KAFKA_CERT_FILE: "/run/app-secrets/kafka-client.crt"
+      KAFKA_KEY_FILE: "/run/app-secrets/kafka-client.key"
 
       # ---- SENSOR CONFIG ----
       SENSOR_ID: "sensor-avenida-1" # ID del sensor
       SENSOR_LOCATION: "Avenida Principal Pasto" # Ubicación del sensor
       SEND_INTERVAL_SECONDS: "2" # Intervalo de envío de eventos
       EVENTS_PER_BATCH: "5" # Número de eventos por batch
-
-      # Para ignorar cert self-signed en desarrollo
-      NODE_TLS_REJECT_UNAUTHORIZED: "0"
-
-    networks:
-      - ingest_net
-
-networks:
-  ingest_net:
-    driver: bridge 
+    volumes:
+      - ./secrets:/run/app-secrets:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    pids_limit: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

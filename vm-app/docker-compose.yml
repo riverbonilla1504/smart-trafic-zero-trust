@@ -1,40 +1,91 @@
-version: "3.8"
 # Docker compose file for the app services.
+x-hardening: &hardening
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  pids_limit: 100
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
-  # Alert dispatcher service.
-  alert_dispatcher:
-    build: ./alert_dispatcher
-    container_name: alert_dispatcher
-    restart: unless-stopped
-    # Depends on the user dashboard backend.
+  # Nginx: unico punto de entrada publico (clases 5 y 10).
+  nginx:
+    <<: *hardening
+    image: nginxinc/nginx-unprivileged:1.29-alpine
+    container_name: nginx
     depends_on:
       - user_dashboard_backend
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+      - ./secrets/nginx:/etc/nginx/tls:ro
+    mem_limit: 128m
     networks:
       - appnet
 
-  # User dashboard backend service.
+  # Alert dispatcher service.
+  alert_dispatcher:
+    <<: *hardening
+    build: ./alert_dispatcher
+    image: smarttraffic/dispatcher:local
+    container_name: alert_dispatcher
+    # Depends on the user dashboard backend.
+    depends_on:
+      - user_dashboard_backend
+    environment:
+      AUTH_URL: "https://10.0.2.10/token"
+      AUTH_CLIENT_ID: "dispatcher"
+      AUTH_CLIENT_SECRET: "${AUTH_DISPATCHER_SECRET:?falta en .env}"
+      RABBITMQ_URL: "amqps://dispatcher:${RABBITMQ_DISPATCHER_PASSWORD:?falta en .env}@10.0.5.10:5671"
+      NODE_EXTRA_CA_CERTS: "/run/app-secrets/ca.pem"
+    volumes:
+      - ./secrets/ca.pem:/run/app-secrets/ca.pem:ro
+    mem_limit: 192m
+    networks:
+      - appnet
+
+  # User dashboard backend service. No publica puertos: solo Nginx llega a el.
   user_dashboard_backend:
+    <<: *hardening
     build: ./user_dashboard_backend
+    image: smarttraffic/dashboard:local
     container_name: user_dashboard_backend
-    restart: unless-stopped
-    # Expose the port 8080.
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
+    mem_limit: 192m
     networks:
       - appnet
 
   # Query client service.
   query_client:
+    <<: *hardening
     build: ./query_client
+    image: smarttraffic/query:local
     container_name: query_client
-    restart: unless-stopped
     # Depends on the user dashboard backend.
     depends_on:
       - user_dashboard_backend
+    environment:
+      RABBITMQ_URL: "amqps://query:${RABBITMQ_QUERY_PASSWORD:?falta en .env}@10.0.5.10:5671"
+      NODE_EXTRA_CA_CERTS: "/run/app-secrets/ca.pem"
+    volumes:
+      - ./secrets/ca.pem:/run/app-secrets/ca.pem:ro
+    mem_limit: 128m
     networks:
       - appnet
 
-  # Networks for the app services.
+# Networks for the app services.
 networks:
   # App network.
   appnet:
