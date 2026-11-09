@@ -50,6 +50,7 @@ jobs:
           - vm-app/alert_dispatcher
           - vm-app/query_client
           - vm-app/user_dashboard_backend
+          - vm-app/security_dashboard
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
