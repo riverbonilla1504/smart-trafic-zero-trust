@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Sparkline } from "@/components/Sparkline";
 import { Bool, Empty, HostStatus, Kpi, Meter, PageHead, Section, Status, Tag } from "@/components/ui";
-import { bytes, duration, number, time } from "@/lib/format";
+import { bytes, duration, number, probeResult, time } from "@/lib/format";
 import { HOST_IDS, hostMeta } from "@/lib/hosts";
 import { ageSeconds, history, hostEntry, hostState } from "@/lib/store";
 
@@ -141,7 +141,7 @@ export default async function HostPage({ params }: { params: Promise<{ host: str
                   <td className="mono">{p.from}</td>
                   <td className="mono">{p.host}:{p.port}</td>
                   <td>{p.expect === "allow" ? <Tag tone="info">permitido</Tag> : <Tag>bloqueado</Tag>}</td>
-                  <td className="mono">{p.result}</td>
+                  <td className="mono">{probeResult(p.result)}</td>
                   <td className="num">{p.ms} ms</td>
                   <td><Status ok={p.ok} /></td>
                 </tr>

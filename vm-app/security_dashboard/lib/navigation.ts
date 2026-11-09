@@ -5,6 +5,7 @@ export const MAIN_NAV = [
   { href: "/arquitectura", label: "Cómo funciona" },
   { href: "/maquinas", label: "Máquinas" },
   { href: "/red", label: "Red y cortafuegos" },
+  { href: "/clases", label: "Clases aplicadas" },
   { href: "/pruebas", label: "Pruebas y evidencias" },
 ];
 

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { ClassChips } from "@/components/Nav";
 import { EvidenceList, PageHead, Score, Section, Tag } from "@/components/ui";
 import { CLASSES, classBySlug } from "@/lib/classes";
+import { CLASS_NAV } from "@/lib/navigation";
 import { evidenceContext, resolveEvidence, score } from "@/lib/resolve";
 
 export default async function ClassPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -20,6 +22,7 @@ export default async function ClassPage({ params }: { params: Promise<{ slug: st
 
   return (
     <>
+      <ClassChips items={CLASS_NAV} />
       <PageHead
         kicker={`${c.label} · ${c.date} · ${c.pdf}`}
         title={c.title}
@@ -64,7 +67,7 @@ export default async function ClassPage({ params }: { params: Promise<{ slug: st
         </div>
       </Section>
 
-      <nav className="test-head" aria-label="Otras clases">
+      <nav className="pager" aria-label="Otras clases">
         {prev ? <Link href={`/clases/${prev.slug}`} prefetch={false}>← {prev.label}: {prev.title}</Link> : <span />}
         {next ? <Link href={`/clases/${next.slug}`} prefetch={false}>{next.label}: {next.title} →</Link> : <Link href="/pruebas" prefetch={false}>Pruebas y evidencias →</Link>}
       </nav>

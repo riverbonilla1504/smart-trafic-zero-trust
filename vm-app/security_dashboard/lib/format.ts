@@ -29,3 +29,11 @@ export function time(iso: string | null | undefined): string {
 export function pct(part: number, total: number): number {
   return total ? Math.round((100 * part) / total) : 0;
 }
+
+// Resultado de una sonda TCP del agente, en palabras.
+export function probeResult(result: string): string {
+  if (result === "open") return "conecta";
+  if (result === "blocked") return "bloqueado (sin respuesta)";
+  if (result === "refused") return "rechazado";
+  return result.replace(/^error:/, "error: ");
+}

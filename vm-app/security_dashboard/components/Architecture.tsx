@@ -4,31 +4,31 @@ import type { HostState } from "@/lib/types";
 type NodeInfo = { state: HostState; checksOk: number; checksTotal: number };
 
 const NODES: { id: string; x: number; y: number; title: string; sub: string; zone: string }[] = [
-  { id: "bastion", x: 455, y: 30, title: "bastion-ec2", sub: "10.0.0.10 · SSH", zone: "Administración" },
-  { id: "app", x: 225, y: 245, title: "app-ec2", sub: "10.0.1.10 · Nginx + Next", zone: "DMZ" },
-  { id: "data", x: 455, y: 245, title: "data-ec2", sub: "10.0.5.10 · Kafka + RabbitMQ", zone: "Datos" },
-  { id: "core", x: 690, y: 150, title: "core-ec2", sub: "10.0.4.10 · procesador", zone: "Procesamiento" },
-  { id: "ingest", x: 690, y: 345, title: "ingest-ec2", sub: "10.0.3.10 · sensores", zone: "Ingesta" },
-  { id: "auth", x: 455, y: 440, title: "auth-ec2", sub: "10.0.2.10 · emisor JWT", zone: "Identidad" },
+  { id: "bastion", x: 455, y: 32, title: "bastion-ec2", sub: "10.0.0.10 · SSH", zone: "Administración" },
+  { id: "app", x: 175, y: 250, title: "app-ec2", sub: "10.0.1.10 · Nginx + Next", zone: "DMZ" },
+  { id: "data", x: 455, y: 250, title: "data-ec2", sub: "10.0.5.10 · Kafka/RabbitMQ", zone: "Datos" },
+  { id: "core", x: 740, y: 140, title: "core-ec2", sub: "10.0.4.10 · procesador", zone: "Procesamiento" },
+  { id: "ingest", x: 740, y: 370, title: "ingest-ec2", sub: "10.0.3.10 · sensores", zone: "Ingesta" },
+  { id: "auth", x: 455, y: 460, title: "auth-ec2", sub: "10.0.2.10 · emisor JWT", zone: "Identidad" },
 ];
 
-const W = 170;
-const H = 74;
+const W = 190;
+const H = 76;
 const center = (id: string) => {
   const n = NODES.find((x) => x.id === id)!;
   return { x: n.x + W / 2, y: n.y + H / 2 };
 };
 
-type Edge = { from: string | [number, number]; to: string; label: string; kind: "tls" | "mtls" | "ssh"; step?: number };
+type Edge = { from: string | [number, number]; to: string; label: string; kind: "tls" | "mtls" | "ssh"; step?: number; dx?: number; dy?: number };
 
 const EDGES: Edge[] = [
-  { from: "ingest", to: "auth", label: "HTTPS 443 · token", kind: "tls", step: 1 },
-  { from: "ingest", to: "data", label: "Kafka 9092 · TLS mutuo", kind: "mtls", step: 2 },
-  { from: "core", to: "data", label: "9092 mTLS / 5671 AMQPS", kind: "mtls", step: 3 },
-  { from: "app", to: "data", label: "AMQPS 5671", kind: "tls", step: 4 },
-  { from: "app", to: "auth", label: "HTTPS 443 · token", kind: "tls" },
-  { from: [40, 282], to: "app", label: "HTTPS 443", kind: "tls", step: 5 },
-  { from: "bastion", to: "app", label: "SSH 22", kind: "ssh" },
+  { from: "ingest", to: "auth", label: "HTTPS 443 · token", kind: "tls", step: 1, dx: 34, dy: 26 },
+  { from: "ingest", to: "data", label: "Kafka 9092 · TLS mutuo", kind: "mtls", step: 2, dx: -62, dy: 22 },
+  { from: "core", to: "data", label: "9092 mTLS · 5671 AMQPS", kind: "mtls", step: 3, dx: -48, dy: -14 },
+  { from: "app", to: "data", label: "AMQPS 5671", kind: "tls", step: 4, dx: 0, dy: -8 },
+  { from: "app", to: "auth", label: "HTTPS 443 · token", kind: "tls", dx: -58, dy: 10 },
+  { from: [44, 288], to: "app", label: "HTTPS 443", kind: "tls", step: 5, dx: 0, dy: -8 },
+  { from: "bastion", to: "app", label: "SSH 22", kind: "ssh", dx: -24, dy: 0 },
   { from: "bastion", to: "data", label: "", kind: "ssh" },
   { from: "bastion", to: "core", label: "", kind: "ssh" },
 ];
@@ -52,7 +52,7 @@ function edgePoints(e: Edge) {
 export function Architecture({ nodes }: { nodes: Record<string, NodeInfo> }) {
   return (
     <figure className="arch">
-      <svg viewBox="0 0 900 540" role="img" aria-labelledby="arch-title arch-desc">
+      <svg viewBox="0 0 960 560" role="img" aria-labelledby="arch-title arch-desc">
         <title id="arch-title">Arquitectura Zero Trust de Smart Traffic</title>
         <desc id="arch-desc">
           Seis máquinas en subredes separadas. Los sensores piden un token a auth, publican en Kafka con TLS mutuo, core verifica y
@@ -67,13 +67,13 @@ export function Architecture({ nodes }: { nodes: Record<string, NodeInfo> }) {
           </marker>
         </defs>
 
-        <rect x="8" y="8" width="884" height="524" rx="14" className="vpc" />
+        <rect x="8" y="8" width="944" height="544" rx="12" className="vpc" />
         <text x="24" y="32" className="vpc-label">VPC 10.0.0.0/16 · us-east-1a</text>
 
         <g className="internet">
-          <circle cx="40" cy="282" r="26" />
-          <text x="40" y="278" textAnchor="middle">Internet</text>
-          <text x="40" y="292" textAnchor="middle" className="small">usuario</text>
+          <circle cx="44" cy="288" r="28" />
+          <text x="44" y="285" textAnchor="middle">Internet</text>
+          <text x="44" y="298" textAnchor="middle" className="small">usuario</text>
         </g>
 
         {EDGES.map((e, i) => {
@@ -82,7 +82,7 @@ export function Architecture({ nodes }: { nodes: Record<string, NodeInfo> }) {
             <g key={i} className={`edge edge-${e.kind}`}>
               <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} markerEnd={e.kind === "ssh" ? "url(#arrow-ssh)" : "url(#arrow)"} />
               {e.label ? (
-                <text x={mid.x} y={mid.y - 7} textAnchor="middle" className="edge-label">
+                <text x={mid.x + (e.dx ?? 0)} y={mid.y + (e.dy ?? -7)} textAnchor="middle" className="edge-label">
                   {e.label}
                 </text>
               ) : null}
@@ -114,9 +114,9 @@ export function Architecture({ nodes }: { nodes: Record<string, NodeInfo> }) {
                 <text x={n.x + 12} y={n.y + 56} className="node-sub">
                   {n.sub}
                 </text>
-                <circle cx={n.x + W - 16} cy={n.y + 16} r="6" className="node-dot" />
+                <circle cx={n.x + W - 14} cy={n.y + 15} r="5" className="node-dot" />
                 {info && info.checksTotal ? (
-                  <text x={n.x + W - 12} y={n.y + H - 10} textAnchor="end" className="node-score">
+                  <text x={n.x + W - 26} y={n.y + 19} textAnchor="end" className="node-score">
                     {info.checksOk}/{info.checksTotal}
                   </text>
                 ) : null}

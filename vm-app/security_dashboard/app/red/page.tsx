@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { Empty, Kpi, PageHead, Section, Status, Tag } from "@/components/ui";
 import { awsChecks, awsInventory } from "@/lib/evidence";
-import { number, time } from "@/lib/format";
+import { number, probeResult, time } from "@/lib/format";
 import { hostByIp, hostMeta } from "@/lib/hosts";
 import { liveChecks } from "@/lib/live";
 import { allHosts } from "@/lib/store";
@@ -52,7 +52,7 @@ export default async function NetworkPage() {
                     <td className="mono">{hostByIp(p.host)?.name ?? p.host}:{p.port}</td>
                     <td>{p.desc}</td>
                     <td>{p.expect === "allow" ? <Tag tone="info">permitido</Tag> : <Tag>bloqueado</Tag>}</td>
-                    <td className={`mono ${p.ok ? "cell-ok" : "cell-fail"}`}>{p.result} · {p.ms} ms</td>
+                    <td className={`mono ${p.ok ? "cell-ok" : "cell-fail"}`}>{probeResult(p.result)} · {p.ms} ms</td>
                     <td><Status ok={p.ok} /></td>
                   </tr>
                 ))}

@@ -510,14 +510,14 @@ def evaluate(report, conf):
     fw = report["firewall"]
     policies = {c["name"]: c["policy"] for c in fw["chains"]}
     add("fw_loaded", "Firewall nftables cargado", fw["loaded"], "tabla inet hostfw")
-    add("fw_default_drop", "Politica por defecto: descartar",
+    add("fw_default_drop", "Política por defecto: descartar",
         fw["loaded"] and all(p == "drop" for p in policies.values()),
         ", ".join(f"{k}={v}" for k, v in policies.items()))
     add("fw_persisted", "Firewall persistente tras reinicio", fw["persisted"], "/etc/nftables.conf")
 
     ssh = report["ssh"]
-    add("ssh_no_password", "SSH sin contrasenas", ssh.get("passwordauthentication") == "no"
-        and ssh.get("kbdinteractiveauthentication") == "no", "solo clave publica")
+    add("ssh_no_password", "SSH sin contraseñas", ssh.get("passwordauthentication") == "no"
+        and ssh.get("kbdinteractiveauthentication") == "no", "solo clave pública")
     add("ssh_no_root", "SSH sin acceso root", ssh.get("permitrootlogin") == "no")
     add("ssh_maxauth", "SSH con intentos limitados", int(ssh.get("maxauthtries", "6")) <= 3,
         f"MaxAuthTries {ssh.get('maxauthtries')}")
@@ -525,12 +525,12 @@ def evaluate(report, conf):
     sc = report["sysctl"]
     add("sysctl_redirects", "Kernel sin redirecciones ICMP ni ruta de origen",
         sc.get("net.ipv4.conf.all.accept_redirects") == "0" and sc.get("net.ipv4.conf.all.accept_source_route") == "0")
-    add("sysctl_syncookies", "Proteccion SYN flood (syncookies)", sc.get("net.ipv4.tcp_syncookies") == "1")
+    add("sysctl_syncookies", "Protección SYN flood (syncookies)", sc.get("net.ipv4.tcp_syncookies") == "1")
     add("aslr", "ASLR completo", sc.get("kernel.randomize_va_space") == "2")
 
     add("time_synced", "Hora sincronizada (validez de JWT)", report["time"].get("synced"),
         f'{report["time"].get("source", "?")} desfase {report["time"].get("offset_ms", "?")} ms')
-    add("auditd", "Auditoria del sistema (auditd)", report["services"].get("auditd", {}).get("active") == "active")
+    add("auditd", "Auditoría del sistema (auditd)", report["services"].get("auditd", {}).get("active") == "active")
     add("patched", "Sin parches de seguridad pendientes", report["patching"]["security"] == 0,
         f'{report["patching"]["upgradable"]} actualizables, {report["patching"]["security"]} de seguridad')
     add("no_reboot", "Sin reinicio pendiente", not report["patching"]["reboot_required"])
@@ -552,30 +552,30 @@ def evaluate(report, conf):
         add("containers_nonroot", "Contenedores sin root", not roots,
             "como root: " + ", ".join(roots) if roots else "todos con usuario sin privilegios")
         down = [c["name"] for c in ctrs if c["status"] != "running"]
-        add("containers_running", "Contenedores en ejecucion", not down,
-            "detenidos: " + ", ".join(down) if down else f"{len(ctrs)} en ejecucion")
+        add("containers_running", "Contenedores en ejecución", not down,
+            "detenidos: " + ", ".join(down) if down else f"{len(ctrs)} en ejecución")
 
     certs = report["certificates"]
     if certs:
         soon = [c["subject"] for c in certs if c["days_left"] is not None and c["days_left"] < 30]
-        add("certs_valid", "Certificados vigentes (>30 dias)", not soon,
-            f"{len(certs)} certificados, minimo {min((c['days_left'] or 0) for c in certs)} dias")
+        add("certs_valid", "Certificados vigentes (>30 días)", not soon,
+            f"{len(certs)} certificados, minimo {min((c['days_left'] or 0) for c in certs)} días")
 
     act = report.get("activity", {})
     role = report.get("role")
     if role == "app" and act.get("nginx"):
         ng = act["nginx"]
-        add("nginx_hardening", "Nginx bastionado (server_tokens, TLS 1.2+, HSTS, metodos)",
+        add("nginx_hardening", "Nginx bastionado (server_tokens, TLS 1.2+, HSTS, métodos)",
             ng["server_tokens_off"] and ng["tls_modern_only"] and ng["hsts"] and ng["methods_limited"],
             ", ".join(k for k, v in ng.items() if v))
-        add("nginx_rate_limit", "Rate limiting 5 r/s con rafaga de 10", ng["rate_5r_s"] and ng["burst_10_nodelay"],
+        add("nginx_rate_limit", "Rate limiting 5 r/s con ráfaga de 10", ng["rate_5r_s"] and ng["burst_10_nodelay"],
             f'{act.get("rate_limited_429", 0)} respuestas 429 en {act.get("window")}')
         add("gateway_mtls", "Pasarela de agentes exige certificado de cliente", ng["client_cert_required"],
-            "ssl_verify_client on en 9443")
+            "ssl_verify_client on en el puerto 9443")
     if role == "data" and act.get("rabbitmq_permissions"):
         broad = [p["user"] for p in act["rabbitmq_permissions"]
                  if p.get("user") != "admin" and ".*" in (p.get("configure"), p.get("write"), p.get("read"))]
-        add("rabbitmq_least_privilege", "RabbitMQ: un usuario por servicio con permisos minimos", not broad,
+        add("rabbitmq_least_privilege", "RabbitMQ: un usuario por servicio con permisos mínimos", not broad,
             "permisos amplios: " + ", ".join(broad) if broad else
             ", ".join(f'{p["user"]} escribe {p["write"]}' for p in act["rabbitmq_permissions"] if p.get("user") != "admin"))
         conns = act.get("rabbitmq_connections") or []
@@ -589,14 +589,14 @@ def evaluate(report, conf):
     if role == "core":
         processed, invalid = act.get("events_processed", 0), act.get("invalid_tokens", 0)
         add("jwt_verification", "Cada evento verificado con su JWT RS256", processed > 0,
-            f"{processed} eventos aceptados y {invalid} descartados por token invalido en {act.get('window')}")
+            f"{processed} eventos aceptados y {invalid} descartados por token inválido en {act.get('window')}")
     if role == "auth":
-        add("auth_audit", "Auditoria de emision de tokens", True,
+        add("auth_audit", "Auditoría de emisión de tokens", True,
             f'{act.get("token_issued", 0)} emitidos, {act.get("token_denied", 0)} denegados en {act.get("window")}')
 
     failed = [f'{p["host"]}:{p["port"]}' for p in report["probes"] if not p["ok"]]
-    add("segmentation", "Segmentacion de red como se diseno", not failed,
-        "fallan: " + ", ".join(failed) if failed else f'{len(report["probes"])} pruebas de conexion correctas')
+    add("segmentation", "Segmentación de red como se diseñó", not failed,
+        "fallan: " + ", ".join(failed) if failed else f'{len(report["probes"])} pruebas de conexión correctas')
     return checks
 
 

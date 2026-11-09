@@ -1,22 +1,25 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Vuelve a pedir los datos del servidor cada pocos segundos sin recargar la pagina.
 export function AutoRefresh({ seconds = 15 }: { seconds?: number }) {
   const router = useRouter();
   const [left, setLeft] = useState(seconds);
+  const deadline = useRef(0);
 
   useEffect(() => {
+    deadline.current = Date.now() + seconds * 1000;
     const tick = setInterval(() => {
-      setLeft((s) => {
-        if (s <= 1) {
-          if (document.visibilityState === "visible") router.refresh();
-          return seconds;
-        }
-        return s - 1;
-      });
+      const remaining = Math.ceil((deadline.current - Date.now()) / 1000);
+      if (remaining <= 0) {
+        deadline.current = Date.now() + seconds * 1000;
+        if (document.visibilityState === "visible") router.refresh();
+        setLeft(seconds);
+      } else {
+        setLeft(remaining);
+      }
     }, 1000);
     return () => clearInterval(tick);
   }, [router, seconds]);

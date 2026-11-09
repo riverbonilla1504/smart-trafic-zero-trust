@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { connection } from "next/server";
+import { ClassChips } from "@/components/Nav";
 import { PageHead, Score } from "@/components/ui";
 import { CLASSES } from "@/lib/classes";
+import { CLASS_NAV } from "@/lib/navigation";
 import { evidenceContext, resolveEvidence, score } from "@/lib/resolve";
 
 export default async function ClassesPage() {
@@ -14,6 +16,7 @@ export default async function ClassesPage() {
         title="De cada documento de clase a una medida comprobable"
         lead="Para cada sesión: qué conceptos se vieron, cómo se aplicaron en el proyecto (con los archivos donde está) y qué evidencia en vivo lo demuestra."
       />
+      <ClassChips items={CLASS_NAV} />
       <div className="grid grid-2">
         {CLASSES.map((c) => {
           const s = score(c.evidence.map((ref) => resolveEvidence(ref, ctx)));
