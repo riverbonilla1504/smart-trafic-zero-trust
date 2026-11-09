@@ -48,6 +48,14 @@ fi
 [ -s ingest-kafka.crt ] || sign_cert ingest-kafka ingest-ec2   "IP:10.0.3.10" clientAuth
 [ -s core-kafka.crt ]   || sign_cert core-kafka   core-ec2     "IP:10.0.4.10" clientAuth
 
+# Monitoreo: nginx recibe los reportes en 10.0.1.10:9443 y exige un certificado por agente.
+[ -s report.crt ] || sign_cert report report-gateway "IP:10.0.1.10" serverAuth
+for host in bastion app auth ingest core data; do
+  [ -s "agent-$host.crt" ] || sign_cert "agent-$host" "agent-$host" "DNS:agent-$host" clientAuth
+done
+# El token impide que otro contenedor publique reportes saltandose a nginx.
+[ -s "$KEYS_DIR/secrets/gateway-token" ] || { mkdir -p "$KEYS_DIR/secrets"; openssl rand -hex 32 > "$KEYS_DIR/secrets/gateway-token"; }
+
 if [ "$(cat nginx.ip 2>/dev/null)" != "$APP_PUBLIC_IP" ]; then
   sign_cert nginx "$APP_PUBLIC_IP" "IP:$APP_PUBLIC_IP" serverAuth
   echo "$APP_PUBLIC_IP" > nginx.ip

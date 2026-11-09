@@ -1,0 +1,10 @@
+[Unit]
+Description=Ejecuta el agente de monitoreo cada 30 s
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=30s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

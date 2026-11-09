@@ -45,8 +45,18 @@ services:
     volumes:
       - kafka-data:/var/lib/kafka/data
       - ./secrets/kafka:/etc/kafka/tls:ro
+    # Bastionado: usuario appuser (1000) de la imagen, sin capacidades y raiz de solo lectura.
+    # La imagen genera kafka.properties en /etc/kafka al arrancar: ahi va un tmpfs.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /etc/kafka:uid=1000,gid=1000,mode=0755
+      - /var/log/kafka:uid=1000,gid=1000,mode=0755
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
+    pids_limit: 300
     mem_limit: 1g
     logging: *logging
     networks:
@@ -55,6 +65,9 @@ services:
   rabbitmq:
     image: rabbitmq:4.1-management
     container_name: rabbitmq
+    # El nombre del nodo (rabbit@<hostname>) decide donde guarda usuarios y colas:
+    # fijo, para que sobrevivan a una recreacion del contenedor.
+    hostname: rabbitmq
     restart: unless-stopped
     ports:
       - "10.0.5.10:5671:5671"       # AMQP con TLS, solo en la IP privada
@@ -67,8 +80,16 @@ services:
       - rabbitmq-data:/var/lib/rabbitmq
       - ./rabbitmq.conf:/etc/rabbitmq/conf.d/90-smarttraffic.conf:ro
       - ./secrets/rabbitmq:/etc/rabbitmq/tls:ro
+    # Bastionado: arranca directamente como el usuario rabbitmq (999), no como root.
+    user: "999:999"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
+    pids_limit: 300
     mem_limit: 640m
     logging: *logging
     networks:

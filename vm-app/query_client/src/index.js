@@ -6,8 +6,16 @@ async function main() {
 
     // Connect to RabbitMQ.
     const conn = await amqp.connect(process.env.RABBITMQ_URL);
+    // Si RabbitMQ se reinicia, se termina el proceso y Docker lo vuelve a arrancar.
+    const exitOnLoss = (reason) => {
+        console.error("[QUERY] Conexion perdida, reiniciando el proceso:", reason?.message ?? reason);
+        process.exit(1);
+    };
+    conn.on("close", exitOnLoss);
+    conn.on("error", exitOnLoss);
     // Create a channel.
     const ch = await conn.createChannel();
+    ch.on("close", exitOnLoss);
 
     // Create the traffic.events exchange.
     await ch.assertQueue("query_traffic_queue");

@@ -12,8 +12,17 @@ class RabbitClient {
     // Connect to RabbitMQ
     async connect() {
         this.conn = await amqplib.connect(settings.rabbitUrl);
+        // Si RabbitMQ se reinicia, la conexion no se recupera sola: se termina el proceso
+        // y Docker (restart: unless-stopped) lo vuelve a arrancar con una conexion nueva.
+        const exitOnLoss = (reason) => {
+            console.error("[RABBIT] Conexion perdida, reiniciando el proceso:", reason?.message ?? reason);
+            process.exit(1);
+        };
+        this.conn.on("close", exitOnLoss);
+        this.conn.on("error", exitOnLoss);
         // Create a channel
         this.channel = await this.conn.createChannel();
+        this.channel.on("close", exitOnLoss);
         // Assert the exchange with the given name and type
         await this.channel.assertExchange(settings.rabbitExchange, settings.rabbitExchangeType, {
             durable: true

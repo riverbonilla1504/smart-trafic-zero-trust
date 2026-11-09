@@ -143,6 +143,13 @@ in_sg "$SG_DATA" 9092 "$SG_CORE"   kafka-core
 in_sg "$SG_DATA" 5671 "$SG_CORE"   rabbitmq-core
 in_sg "$SG_DATA" 5671 "$SG_APP"    rabbitmq-app
 
+# Agentes de monitoreo: cada maquina reporta su estado a app por TLS mutuo en 9443.
+# Solo desde los grupos del proyecto; el puerto no se abre a internet.
+for sg in "$SG_BASTION" "$SG_AUTH" "$SG_INGEST" "$SG_CORE" "$SG_DATA"; do
+  in_sg  "$SG_APP" 9443 "$sg" reporte-agente
+  out_sg "$sg" 9443 "$SG_APP" reporte-agente
+done
+
 out_cidr "$SG_SETUP" 80  0.0.0.0/0 setup-http
 out_cidr "$SG_SETUP" 443 0.0.0.0/0 setup-https
 

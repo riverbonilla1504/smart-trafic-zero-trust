@@ -1,0 +1,18 @@
+[Unit]
+Description=Agente de monitoreo Smart Traffic (reporte de controles por TLS mutuo)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/sbin/st-agent
+Nice=10
+TimeoutStartSec=60
+# Corre como root para leer nft, sshd -T y docker, pero no puede modificar /usr, /boot ni /etc.
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+NoNewPrivileges=true
+StateDirectory=st-agent
+StandardOutput=journal
+StandardError=journal

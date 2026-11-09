@@ -1,0 +1,96 @@
+{
+  "defaults": {
+    "report_url": "https://10.0.1.10:9443/report",
+    "cert_dirs": ["/opt/smart-traffic", "/etc/st-agent"],
+    "services": ["ssh", "nftables", "auditd", "chrony", "docker", "st-agent.timer"]
+  },
+  "hosts": {
+    "bastion": {
+      "role": "bastion",
+      "private_ip": "10.0.0.10",
+      "services": ["ssh", "nftables", "auditd", "chrony", "fail2ban", "st-agent.timer"],
+      "expected_ports": [22],
+      "host_probes": [
+        { "host": "10.0.1.10", "port": 22, "expect": "allow", "desc": "Administración SSH hacia la DMZ" },
+        { "host": "10.0.5.10", "port": 22, "expect": "allow", "desc": "Administración SSH hacia datos" },
+        { "host": "10.0.5.10", "port": 9092, "expect": "deny", "desc": "El bastión no accede a Kafka" },
+        { "host": "10.0.2.10", "port": 443, "expect": "deny", "desc": "El bastión no pide tokens" },
+        { "host": "1.1.1.1", "port": 443, "expect": "deny", "desc": "Sin salida a internet" }
+      ]
+    },
+    "app": {
+      "role": "app",
+      "private_ip": "10.0.1.10",
+      "expected_ports": [22, 80, 443, 9443],
+      "probe_container": "alert_dispatcher",
+      "container_probes": [
+        { "host": "10.0.2.10", "port": 443, "expect": "allow", "desc": "Pedir token a auth" },
+        { "host": "10.0.5.10", "port": 5671, "expect": "allow", "desc": "Consumir alertas por AMQPS" },
+        { "host": "10.0.5.10", "port": 9092, "expect": "deny", "desc": "La DMZ no llega a Kafka" },
+        { "host": "10.0.4.10", "port": 22, "expect": "deny", "desc": "La DMZ no administra core" },
+        { "host": "1.1.1.1", "port": 443, "expect": "deny", "desc": "Sin salida a internet" }
+      ],
+      "host_probes": [
+        { "host": "10.0.2.10", "port": 22, "expect": "deny", "desc": "El host DMZ no abre SSH a otras zonas" },
+        { "host": "10.0.5.10", "port": 15672, "expect": "deny", "desc": "Panel de RabbitMQ no expuesto" }
+      ]
+    },
+    "auth": {
+      "role": "auth",
+      "private_ip": "10.0.2.10",
+      "expected_ports": [22, 443],
+      "probe_container": "auth-server",
+      "container_probes": [
+        { "host": "10.0.5.10", "port": 9092, "expect": "deny", "desc": "Identidad no accede a Kafka" },
+        { "host": "10.0.5.10", "port": 5671, "expect": "deny", "desc": "Identidad no accede a RabbitMQ" },
+        { "host": "10.0.3.10", "port": 22, "expect": "deny", "desc": "Sin movimiento lateral a ingest" },
+        { "host": "1.1.1.1", "port": 443, "expect": "deny", "desc": "Sin salida a internet" }
+      ],
+      "host_probes": [
+        { "host": "10.0.1.10", "port": 9443, "expect": "allow", "desc": "Canal de reporte del agente" }
+      ]
+    },
+    "ingest": {
+      "role": "ingest",
+      "private_ip": "10.0.3.10",
+      "expected_ports": [22],
+      "probe_container": "traffic_sensor_simulator",
+      "container_probes": [
+        { "host": "10.0.2.10", "port": 443, "expect": "allow", "desc": "Pedir token a auth" },
+        { "host": "10.0.5.10", "port": 9092, "expect": "allow", "desc": "Publicar en Kafka (mTLS)" },
+        { "host": "10.0.5.10", "port": 5671, "expect": "deny", "desc": "Ingesta no accede a RabbitMQ" },
+        { "host": "10.0.4.10", "port": 22, "expect": "deny", "desc": "Sin movimiento lateral a core" },
+        { "host": "1.1.1.1", "port": 443, "expect": "deny", "desc": "Sin salida a internet" }
+      ],
+      "host_probes": [
+        { "host": "10.0.1.10", "port": 9443, "expect": "allow", "desc": "Canal de reporte del agente" }
+      ]
+    },
+    "core": {
+      "role": "core",
+      "private_ip": "10.0.4.10",
+      "expected_ports": [22],
+      "probe_container": "traffic_density_processor",
+      "container_probes": [
+        { "host": "10.0.5.10", "port": 9092, "expect": "allow", "desc": "Consumir de Kafka (mTLS)" },
+        { "host": "10.0.5.10", "port": 5671, "expect": "allow", "desc": "Publicar en RabbitMQ (AMQPS)" },
+        { "host": "10.0.2.10", "port": 443, "expect": "deny", "desc": "core no necesita a auth (clave pública)" },
+        { "host": "1.1.1.1", "port": 443, "expect": "deny", "desc": "Sin salida a internet" }
+      ],
+      "host_probes": [
+        { "host": "10.0.1.10", "port": 9443, "expect": "allow", "desc": "Canal de reporte del agente" }
+      ]
+    },
+    "data": {
+      "role": "data",
+      "private_ip": "10.0.5.10",
+      "expected_ports": [22, 5671, 9092],
+      "host_probes": [
+        { "host": "10.0.2.10", "port": 443, "expect": "deny", "desc": "Datos no inicia conexiones a auth" },
+        { "host": "10.0.4.10", "port": 22, "expect": "deny", "desc": "Sin movimiento lateral a core" },
+        { "host": "1.1.1.1", "port": 443, "expect": "deny", "desc": "Sin salida a internet" },
+        { "host": "10.0.1.10", "port": 9443, "expect": "allow", "desc": "Canal de reporte del agente" }
+      ]
+    }
+  }
+}

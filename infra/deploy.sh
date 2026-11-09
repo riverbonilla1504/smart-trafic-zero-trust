@@ -2,7 +2,7 @@
 # Despliega codigo, secretos y firewall en las maquinas.
 # Requiere salida a internet (infra/nat.sh up) la primera vez o al reconstruir imagenes.
 #
-# Uso: infra/deploy.sh [firewall|data|auth|core|ingest|app ...]   (por defecto: todo)
+# Uso: infra/deploy.sh [firewall|data|auth|core|ingest|app|agent|evidence ...]   (por defecto: todo)
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 SSH_EXE=/c/Windows/System32/OpenSSH/ssh.exe
@@ -20,15 +20,21 @@ source "$GEN_DIR/public_ips.env"   # define bastion= y app=
 source "$SEC/secrets.env"
 
 push_code() { # host vm_dir
-  rssh "$1" "sudo mkdir -p $REMOTE/$2 && sudo chown -R ubuntu:ubuntu $REMOTE/$2"
-  tar czf - --exclude=node_modules --exclude=secrets --exclude=.env -C "$ROOT" "$2" \
+  # Se borra el codigo anterior (no los secretos, evidencias ni .env) para que no queden
+  # archivos que ya no existen en el repositorio.
+  rssh "$1" "sudo mkdir -p $REMOTE/$2 &&
+    sudo find $REMOTE/$2 -mindepth 1 -maxdepth 1 ! -name secrets ! -name evidence ! -name .env -exec rm -rf {} + &&
+    sudo chown -R ubuntu:ubuntu $REMOTE/$2"
+  tar czf - --exclude=node_modules --exclude=.next --exclude=secrets --exclude=evidence --exclude=.env -C "$ROOT" "$2" \
     | rssh "$1" "tar xzf - -C $REMOTE"
 }
 
 # Copia un directorio preparado como secrets/ con el propietario que usa el contenedor.
 push_secrets() { # host vm_dir staging
+  # Se borran los archivos pero no los directorios: un contenedor que no se recrea sigue
+  # montando el mismo directorio y ve los archivos nuevos.
   tar czf - -C "$3" . | rssh "$1" "
-    sudo rm -rf $REMOTE/$2/secrets && sudo mkdir -p $REMOTE/$2/secrets &&
+    sudo mkdir -p $REMOTE/$2/secrets && sudo find $REMOTE/$2/secrets -mindepth 1 -type f -delete &&
     sudo tar xzf - --no-same-owner -C $REMOTE/$2/secrets"
 }
 
@@ -127,24 +133,81 @@ deploy_ingest() {
 
 deploy_app() {
   log "== app =="
+  # El dashboard estatico anterior se sustituyo por security_dashboard (Next.js).
+  rssh app "sudo rm -rf $REMOTE/vm-app/nginx/html"
   push_code app vm-app
-  local d
+  local d token
   d="$(stage app)"
-  mkdir -p "$d/nginx"
+  token="$(tr -d '\r\n' < "$SEC/gateway-token")"
+  mkdir -p "$d/nginx" "$d/dashboard"
   cp "$PKI/ca.pem" "$d/ca.pem"
   cat "$PKI/nginx.crt" "$PKI/ca.pem" > "$d/nginx/server.crt"
   cp "$PKI/nginx.key" "$d/nginx/server.key"
   cp "$SEC/htpasswd" "$d/nginx/htpasswd"
+  # Pasarela de agentes: certificado para 10.0.1.10 y CA para verificar a los clientes.
+  cat "$PKI/report.crt" "$PKI/ca.pem" > "$d/nginx/report.crt"
+  cp "$PKI/report.key" "$d/nginx/report.key"
+  cp "$PKI/ca.pem" "$d/nginx/ca.pem"
+  printf 'proxy_set_header X-Gateway-Token "%s";\n' "$token" > "$d/nginx/gateway-token.conf"
+  cp "$PKI/ca.pem" "$d/dashboard/ca.pem"
+  printf '%s\n' "$token" > "$d/dashboard/gateway-token"
   push_secrets app vm-app "$d"
-  # Nginx sin privilegios corre como uid 101; los servicios Node solo leen ca.pem.
+  # Nginx sin privilegios corre como uid 101; los servicios Node (uid 1000) solo leen lo suyo.
   rssh app "sudo sh -c 'cd $REMOTE/vm-app/secrets && chown -R 101:101 nginx && chmod 500 nginx && chmod 400 nginx/* &&
+            chown -R 1000:1000 dashboard && chmod 500 dashboard && chmod 400 dashboard/* &&
             chown 1000:1000 ca.pem && chmod 444 ca.pem'"
   {
     printf 'AUTH_DISPATCHER_SECRET=%s\n' "$AUTH_DISPATCHER_SECRET"
     printf 'RABBITMQ_DISPATCHER_PASSWORD=%s\n' "$RABBITMQ_DISPATCHER_PASSWORD"
     printf 'RABBITMQ_QUERY_PASSWORD=%s\n' "$RABBITMQ_QUERY_PASSWORD"
+    printf 'PUBLIC_IP=%s\n' "$app"
   } | push_env app vm-app
+  deploy_evidence
   compose_up app vm-app
+}
+
+# Evidencias generadas en el equipo de administracion (pruebas e inventario de AWS).
+deploy_evidence() {
+  local src="$GEN_DIR/evidence"
+  mkdir -p "$src/files"
+  # El directorio se conserva (el contenedor lo tiene montado); solo se reemplaza su contenido.
+  tar czf - -C "$src" . | rssh app "
+    sudo mkdir -p $REMOTE/vm-app/evidence && sudo find $REMOTE/vm-app/evidence -mindepth 1 -delete &&
+    sudo tar xzf - --no-same-owner -C $REMOTE/vm-app/evidence &&
+    sudo chown -R root:root $REMOTE/vm-app/evidence && sudo chmod -R a+rX,go-w $REMOTE/vm-app/evidence"
+  log "Evidencias copiadas a app-ec2"
+}
+
+# Agente de monitoreo: script, certificado propio, configuracion y timer de systemd.
+deploy_agent() {
+  local host d
+  for host in bastion app auth ingest core data; do
+    d="$(stage "agent-$host")"
+    cp "$ROOT/infra/agent/st-agent.py" "$ROOT/infra/agent/st-agent.service" "$ROOT/infra/agent/st-agent.timer" "$d/"
+    cp "$PKI/ca.pem" "$d/ca.pem"
+    cp "$PKI/agent-$host.crt" "$d/agent.crt"
+    cp "$PKI/agent-$host.key" "$d/agent.key"
+    HOSTS_FILE="$(cygpath -w "$ROOT/infra/agent/hosts.json")" OUT="$(cygpath -w "$d/agent.json")" H="$host" python - <<'PY'
+import json, os
+data = json.load(open(os.environ["HOSTS_FILE"], encoding="utf-8"))
+conf = {**data["defaults"], **data["hosts"][os.environ["H"]], "host": os.environ["H"]}
+with open(os.environ["OUT"], "w", encoding="utf-8", newline="\n") as handle:
+    json.dump(conf, handle, ensure_ascii=False, indent=1)
+PY
+    tar czf - -C "$d" . | rssh "$host" "sudo sh -c '
+      set -e
+      tmp=\$(mktemp -d) && tar xzf - --no-same-owner -C \$tmp
+      install -o root -g root -m 0750 \$tmp/st-agent.py /usr/local/sbin/st-agent
+      install -o root -g root -m 0644 \$tmp/st-agent.service \$tmp/st-agent.timer /etc/systemd/system/
+      install -d -o root -g root -m 0700 /etc/st-agent
+      install -o root -g root -m 0644 \$tmp/ca.pem \$tmp/agent.crt \$tmp/agent.json /etc/st-agent/
+      install -o root -g root -m 0600 \$tmp/agent.key /etc/st-agent/agent.key
+      rm -rf \$tmp
+      systemctl daemon-reload
+      systemctl enable --now st-agent.timer >/dev/null 2>&1
+      systemctl start st-agent.service || true
+      journalctl -u st-agent.service -n 1 -o cat --no-pager'" 2>&1 | tr -d '\r' | tail -1 | sed "s/^/[$host] /"
+  done
 }
 
 # Aplica el firewall con reversion automatica: si cortara el SSH, se retira a los 2 minutos.
@@ -163,7 +226,7 @@ deploy_firewall() {
 }
 
 TARGETS=("$@")
-[ "${#TARGETS[@]}" -gt 0 ] || TARGETS=(data auth core ingest app firewall)
+[ "${#TARGETS[@]}" -gt 0 ] || TARGETS=(data auth core ingest app firewall agent)
 
 for target in "${TARGETS[@]}"; do
   case "$target" in
@@ -173,6 +236,8 @@ for target in "${TARGETS[@]}"; do
     ingest)   deploy_ingest ;;
     app)      deploy_app ;;
     firewall) deploy_firewall ;;
+    agent)    deploy_agent ;;
+    evidence) deploy_evidence ;;
     *) echo "Destino desconocido: $target" >&2; exit 2 ;;
   esac
 done

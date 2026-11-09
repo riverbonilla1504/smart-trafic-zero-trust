@@ -22,3 +22,6 @@
 .env
 # Material de clase: no se publica
 /docs-clases/
+
+# Compilacion de Next.js
+**/.next/
