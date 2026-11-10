@@ -30,12 +30,12 @@ export function Nav({ items }: { items: NavItem[] }) {
   );
 }
 
-// Submenú de clases en forma de chips.
-export function ClassChips({ items }: { items: NavItem[] }) {
+// Submenú de familias de controles en forma de chips.
+export function ControlChips({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
   return (
-    <nav className="chips" aria-label="Clases">
-      <Link href="/clases" prefetch={false} className={`chip ${pathname === "/clases" ? "active" : ""}`}>
+    <nav className="chips" aria-label="Familias de controles">
+      <Link href="/controles" prefetch={false} className={`chip ${pathname === "/controles" ? "active" : ""}`}>
         Todas
       </Link>
       {items.map((item) => (

@@ -1,30 +1,30 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { ClassChips } from "@/components/Nav";
+import { ControlChips } from "@/components/Nav";
 import { EvidenceList, PageHead, Score, Section, Tag } from "@/components/ui";
-import { CLASSES, classBySlug } from "@/lib/classes";
-import { CLASS_NAV } from "@/lib/navigation";
+import { CONTROLS, controlBySlug } from "@/lib/controls";
+import { CONTROL_NAV } from "@/lib/navigation";
 import { evidenceContext, resolveEvidence, score } from "@/lib/resolve";
 
-export default async function ClassPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ControlPage({ params }: { params: Promise<{ slug: string }> }) {
   await connection();
   const { slug } = await params;
-  const c = classBySlug(slug);
+  const c = controlBySlug(slug);
   if (!c) notFound();
 
   const ctx = await evidenceContext();
   const evidence = c.evidence.map((ref) => resolveEvidence(ref, ctx));
   const s = score(evidence);
-  const index = CLASSES.findIndex((x) => x.slug === slug);
-  const prev = CLASSES[index - 1];
-  const next = CLASSES[index + 1];
+  const index = CONTROLS.findIndex((x) => x.slug === slug);
+  const prev = CONTROLS[index - 1];
+  const next = CONTROLS[index + 1];
 
   return (
     <>
-      <ClassChips items={CLASS_NAV} />
+      <ControlChips items={CONTROL_NAV} />
       <PageHead
-        kicker={`${c.label} · ${c.date} · ${c.pdf}`}
+        kicker={`Controles aplicados · ${c.area}`}
         title={c.title}
         lead={
           <>
@@ -35,10 +35,10 @@ export default async function ClassPage({ params }: { params: Promise<{ slug: st
       />
 
       <div className="grid grid-2">
-        <Section title="Qué se vio en clase" kicker="Conceptos">
+        <Section title="Qué riesgo cubre" kicker="Objetivo del control">
           <div className="card">
             <ul className="concepts">
-              {c.concepts.map((x) => (
+              {c.risks.map((x) => (
                 <li key={x}>{x}</li>
               ))}
             </ul>
@@ -67,9 +67,13 @@ export default async function ClassPage({ params }: { params: Promise<{ slug: st
         </div>
       </Section>
 
-      <nav className="pager" aria-label="Otras clases">
-        {prev ? <Link href={`/clases/${prev.slug}`} prefetch={false}>← {prev.label}: {prev.title}</Link> : <span />}
-        {next ? <Link href={`/clases/${next.slug}`} prefetch={false}>{next.label}: {next.title} →</Link> : <Link href="/pruebas" prefetch={false}>Pruebas y evidencias →</Link>}
+      <nav className="pager" aria-label="Otros controles">
+        {prev ? <Link href={`/controles/${prev.slug}`} prefetch={false}>← {prev.title}</Link> : <span />}
+        {next ? (
+          <Link href={`/controles/${next.slug}`} prefetch={false}>{next.title} →</Link>
+        ) : (
+          <Link href="/pruebas" prefetch={false}>Pruebas y evidencias →</Link>
+        )}
       </nav>
     </>
   );

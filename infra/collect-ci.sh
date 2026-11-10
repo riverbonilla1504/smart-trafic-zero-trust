@@ -37,7 +37,7 @@ for job in run["jobs"]:
     blocking = not name.startswith("third-party")
     tests.append({
         "id": "trivy-" + re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-"),
-        "clase": "Sesión 7 · DevSecOps (GitHub Actions + Trivy)",
+        "grupo": "Pipeline de seguridad (GitHub Actions + Trivy)",
         "titulo": f"Trivy: {name}",
         "comando": "trivy " + ("fs + config (repositorio)" if name == "repo-scan" else "image") +
                    (" --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1" if blocking else " --exit-code 0 (informativo)"),
@@ -51,7 +51,7 @@ for job in run["jobs"]:
 
 tests.insert(0, {
     "id": "trivy-ci",
-    "clase": "Sesión 7 · DevSecOps (GitHub Actions + Trivy)",
+    "grupo": "Pipeline de seguridad (GitHub Actions + Trivy)",
     "titulo": "Pipeline de seguridad en main",
     "comando": f'.github/workflows/seguridad.yml · ejecución {run["databaseId"]} · commit {run["headSha"][:7]}',
     "esperado": "Todos los trabajos en verde",

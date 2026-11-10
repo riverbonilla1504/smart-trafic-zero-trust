@@ -106,7 +106,7 @@ code { background: var(--stone-100); border: 1px solid var(--stone-200); border-
 .footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; }
 .footer div { max-width: var(--max); margin: 0 auto; padding: 12px 24px; }
 
-/* Submenú de clases: chips como los filtros de la referencia */
+/* Submenú de familias de controles: chips como los filtros de la referencia */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--stone-300); background: #fff;
@@ -344,7 +344,7 @@ dl.kv dd { margin: 0; font-family: var(--font-mono); font-size: 0.82rem; overflo
 .level-high { color: var(--red-700); }
 .level-high::before { background: var(--red-600); }
 
-/* ---------- Clases ---------- */
+/* ---------- Controles ---------- */
 .class-card { gap: 8px; }
 .concepts { margin: 0; padding-left: 18px; color: var(--text-2); display: grid; gap: 4px; font-size: 0.9rem; }
 .applied { display: grid; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }

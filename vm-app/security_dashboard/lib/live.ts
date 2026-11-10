@@ -298,7 +298,7 @@ async function runAll(): Promise<LiveCheck[]> {
     },
     {
       id: "auth-sqli",
-      title: "Inyección en el login (clase 8)",
+      title: "Inyección en el login",
       target: "client_id = sensor' OR '1'='1",
       expect: "401: el valor se compara como texto, no se interpreta",
       ok: sqli.status === 401,

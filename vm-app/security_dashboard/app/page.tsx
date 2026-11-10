@@ -2,7 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Architecture } from "@/components/Architecture";
 import { HostStatus, Kpi, PageHead, Score, Section, Status } from "@/components/ui";
-import { CLASSES } from "@/lib/classes";
+import { CONTROLS } from "@/lib/controls";
 import { duration, number } from "@/lib/format";
 import { hostMeta } from "@/lib/hosts";
 import { evidenceContext, resolveEvidence, score } from "@/lib/resolve";
@@ -24,7 +24,7 @@ export default async function Home() {
     ]),
   );
 
-  const coverage = CLASSES.map((c) => {
+  const coverage = CONTROLS.map((c) => {
     const items = c.evidence.map((ref) => resolveEvidence(ref, ctx));
     return { c, ...score(items) };
   });
@@ -65,7 +65,7 @@ export default async function Home() {
       <div className="grid grid-kpi">
         <Kpi label="Máquinas reportando" value={`${s.online}/${s.total}`} tone={s.online === s.total ? "ok" : "fail"} hint="latido cada 30 s · caída a los 90 s" />
         <Kpi label="Controles cumplidos" value={`${s.checksOk}/${s.checksTotal}`} tone={s.checksOk === s.checksTotal ? "ok" : "warn"} hint="evaluados por los agentes" />
-        <Kpi label="Evidencias de clase" value={`${okEvidence}/${totalEvidence}`} tone={okEvidence === totalEvidence ? "ok" : "warn"} hint="10 documentos de clase" />
+        <Kpi label="Evidencias de controles" value={`${okEvidence}/${totalEvidence}`} tone={okEvidence === totalEvidence ? "ok" : "warn"} hint={`${CONTROLS.length} familias de controles`} />
         <Kpi label="Segmentación" value={`${s.probesOk}/${s.probesTotal}`} tone={s.probesOk === s.probesTotal ? "ok" : "fail"} hint="conexiones probadas entre zonas" />
         <Kpi label="Contenedores" value={`${s.containersRunning}/${s.containersTotal}`} tone={s.containersRunning === s.containersTotal ? "ok" : "warn"} hint="en ejecución y bastionados" />
         <Kpi label="Paquetes descartados" value={number(s.drops)} hint="por nftables desde el arranque" />
@@ -133,11 +133,11 @@ export default async function Home() {
         </Section>
       </div>
 
-      <Section title="Cobertura de las clases" kicker="Qué se aplicó de cada documento">
+      <Section title="Controles aplicados" kicker="Cada familia con su evidencia en vivo">
         <div className="grid grid-3">
           {coverage.map(({ c, ok, known, total }) => (
-            <Link key={c.slug} href={`/clases/${c.slug}`} prefetch={false} className="card class-card">
-              <div className="kicker">{c.label} · {c.date}</div>
+            <Link key={c.slug} href={`/controles/${c.slug}`} prefetch={false} className="card class-card">
+              <div className="kicker">{c.area}</div>
               <h3>
                 {c.title} <Score ok={ok} total={total} />
               </h3>

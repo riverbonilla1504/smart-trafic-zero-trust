@@ -120,7 +120,7 @@ export type HostState = "online" | "late" | "offline" | "never";
 
 export type TestResult = {
   id: string;
-  clase: string;
+  grupo: string;
   titulo: string;
   comando: string;
   esperado: string;

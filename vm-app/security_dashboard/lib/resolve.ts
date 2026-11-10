@@ -1,4 +1,4 @@
-import type { EvidenceRef } from "./classes";
+import type { EvidenceRef } from "./controls";
 import { awsChecks, awsInventory, testsFile } from "./evidence";
 import { liveChecks } from "./live";
 import { allHosts } from "./store";

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-// Clase 5: CSP estricta con nonce por peticion. Solo se ejecutan los scripts que
+// CSP estricta con nonce por peticion. Solo se ejecutan los scripts que
 // Next.js firma con el nonce; un script inyectado no lo conoce y el navegador lo bloquea.
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");

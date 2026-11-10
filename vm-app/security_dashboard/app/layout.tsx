@@ -18,7 +18,7 @@ const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"
 
 export const metadata: Metadata = {
   title: "Smart Traffic · Seguridad",
-  description: "Estado en vivo de la infraestructura Zero Trust y evidencia de los controles aplicados en cada clase.",
+  description: "Estado en vivo de la infraestructura Zero Trust y evidencia de los controles de seguridad aplicados.",
   robots: { index: false, follow: false },
 };
 
@@ -39,7 +39,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 <span className="brand-mark" aria-hidden="true">ST</span>
                 <span>
                   <strong>Smart Traffic · Seguridad Zero Trust</strong>
-                  <small>Estado en vivo de las 6 máquinas EC2 y evidencia de lo aplicado en clase.</small>
+                  <small>Estado en vivo de las 6 máquinas EC2 y evidencia de los controles aplicados.</small>
                 </span>
               </Link>
               <div className="header-status">
@@ -58,7 +58,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           </header>
           <main className="content">{children}</main>
           <footer className="footer">
-            <div>Sistemas de Comunicación y Seguridad Informática · 2026 · Los datos vienen de los agentes de cada máquina (TLS mutuo, cada 30 s).</div>
+            <div>Smart Traffic · 2026 · Los datos vienen de los agentes de cada máquina (TLS mutuo, cada 30 s).</div>
           </footer>
         </div>
       </body>

@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Imagen minima: solo el servidor y los modulos que usa.
   output: "standalone",
-  // Clase 5: no anunciar la tecnologia del servidor.
+  // No anunciar la tecnologia del servidor.
   poweredByHeader: false,
   reactStrictMode: true,
   // El panel cambia cada pocos segundos; nada se cachea en el navegador.

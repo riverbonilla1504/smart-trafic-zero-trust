@@ -1,6 +1,7 @@
-// Que se vio en cada documento de clase, como se aplico en el proyecto y con que se demuestra.
-// Cada evidencia apunta a un dato real: una comprobacion de los agentes (check), una prueba
-// registrada (test), una comprobacion en vivo del dashboard (live) o el inventario de AWS (aws).
+// Familias de controles de seguridad aplicados: que riesgo cubren, como se implementaron
+// y con que se demuestran. Cada evidencia apunta a un dato real: una comprobacion de los
+// agentes (check), un resultado del pipeline (test), una comprobacion en vivo del dashboard
+// (live) o el inventario de AWS (aws).
 
 export type EvidenceRef =
   | { kind: "check"; id: string }
@@ -11,30 +12,26 @@ export type EvidenceRef =
 
 export type Applied = { title: string; detail: string; files: string[] };
 
-export type ClassInfo = {
+export type ControlInfo = {
   slug: string;
-  label: string;
-  date: string;
+  area: string;
   title: string;
-  pdf: string;
-  concepts: string[];
+  risks: string[];
   applied: Applied[];
   evidence: EvidenceRef[];
   limits?: string;
 };
 
-export const CLASSES: ClassInfo[] = [
+export const CONTROLS: ControlInfo[] = [
   {
-    slug: "criptografia",
-    label: "Semana 1",
-    date: "1 sep 2026",
-    title: "Criptografía y funciones hash",
-    pdf: "Semana 1 comunicación y seguridad informatica",
-    concepts: [
-      "Triada CIA: confidencialidad, integridad y disponibilidad.",
-      "Cifrado simétrico frente a asimétrico; firma digital con clave privada y verificación con la pública.",
-      "Funciones hash: resumen de tamaño fijo, irreversibles; la sal impide los ataques con tablas precalculadas.",
-      "Certificados X.509 y autoridades de certificación (PKI).",
+    slug: "cifrado",
+    area: "Datos",
+    title: "Cifrado y criptografía",
+    risks: [
+      "Lectura o alteración de datos al viajar por la red (confidencialidad e integridad).",
+      "Robo de credenciales guardadas en claro o con hashes débiles.",
+      "Suplantación de servicios sin certificados verificables.",
+      "Falsificación de tokens de acceso.",
     ],
     applied: [
       {
@@ -80,16 +77,14 @@ export const CLASSES: ClassInfo[] = [
     ],
   },
   {
-    slug: "trafico-y-cortafuegos",
-    label: "Semana 2",
-    date: "8 sep 2026",
-    title: "Análisis de tráfico, cortafuegos y VPN",
-    pdf: "Semana 2 Sistemas de Comunicación y Seguridad Informática",
-    concepts: [
-      "Captura y análisis de paquetes con Wireshark/tcpdump: qué ve un atacante en la red.",
-      "Cortafuegos de filtrado con estado: iptables/UFW, cadenas INPUT, FORWARD y OUTPUT.",
-      "Política por defecto «denegar» y reglas explícitas para lo permitido.",
-      "VPN y túneles cifrados para el acceso remoto.",
+    slug: "cortafuegos",
+    area: "Red",
+    title: "Cortafuegos de host",
+    risks: [
+      "Conexiones no previstas hacia o desde una máquina comprometida.",
+      "Tráfico de contenedores que se salta las reglas del host.",
+      "Reglas que se pierden al reiniciar o que cortan el acceso al aplicarlas.",
+      "Captura de tráfico en la red interna.",
     ],
     applied: [
       {
@@ -119,7 +114,7 @@ export const CLASSES: ClassInfo[] = [
       {
         title: "Túnel SSH en lugar de VPN",
         detail:
-          "El acceso administrativo va cifrado por SSH a través del bastión (ProxyCommand), con clave ed25519 por máquina. Cumple la función de la VPN de la clase: un único punto de entrada autenticado y cifrado.",
+          "El acceso administrativo va cifrado por SSH a través del bastión (ProxyCommand), con clave ed25519 por máquina. Cumple la función de una VPN: un único punto de entrada autenticado y cifrado.",
         files: ["infra/gen-ssh-config.sh"],
       },
     ],
@@ -134,15 +129,13 @@ export const CLASSES: ClassInfo[] = [
     limits: "No se montó una VPN como tal: el bastión SSH cubre el acceso remoto cifrado sin añadir otro servicio.",
   },
   {
-    slug: "segmentacion-zero-trust",
-    label: "Semana 3",
-    date: "15 sep 2026",
-    title: "Segmentación de red y Zero Trust",
-    pdf: "Semana 3 seguridad y comunicación",
-    concepts: [
-      "Segmentación con VLAN y subredes para contener un incidente.",
-      "Zero Trust: nunca confiar por estar dentro de la red; verificar cada acceso.",
-      "Microsegmentación: cada flujo permitido de forma explícita y nada más.",
+    slug: "segmentacion",
+    area: "Red",
+    title: "Segmentación y Zero Trust",
+    risks: [
+      "Movimiento lateral: que una máquina comprometida alcance al resto.",
+      "Confiar en algo solo por estar dentro de la red.",
+      "Exfiltración de datos hacia internet desde las zonas internas.",
     ],
     applied: [
       {
@@ -188,15 +181,13 @@ export const CLASSES: ClassInfo[] = [
     ],
   },
   {
-    slug: "iam-aaa",
-    label: "Semana 4",
-    date: "22 sep 2026",
-    title: "IAM, AAA y mínimo privilegio",
-    pdf: "Semana 4 Comunicación y seguridad Informatica",
-    concepts: [
-      "AAA: autenticación (quién eres), autorización (qué puedes hacer) y auditoría (qué hiciste).",
-      "Servidores centralizados de autenticación (RADIUS/TACACS+).",
-      "Control de acceso RBAC/ABAC y principio de mínimo privilegio.",
+    slug: "identidad",
+    area: "Identidad",
+    title: "Identidad y control de acceso",
+    risks: [
+      "Clientes no autenticados publicando o leyendo eventos.",
+      "Permisos excesivos: un servicio comprometido puede hacer más de lo que necesita.",
+      "Acciones sin rastro: no saber quién pidió acceso ni cuándo.",
     ],
     applied: [
       {
@@ -241,15 +232,13 @@ export const CLASSES: ClassInfo[] = [
       "No se usa RADIUS: el servidor de identidad propio cumple el mismo papel centralizado con tokens firmados, que encajan mejor con servicios que con usuarios de red.",
   },
   {
-    slug: "bastionado-web",
-    label: "Semana 5",
-    date: "29 sep 2026",
-    title: "Bastionado del servidor web",
-    pdf: "Semana 5 Sistemas de Comunicación y Seguridad Informática",
-    concepts: [
-      "Ocultar la versión del servidor (server_tokens off).",
-      "Cabeceras defensivas: X-Frame-Options, X-Content-Type-Options, HSTS, Content-Security-Policy.",
-      "Verificación con curl -I y forzar HTTPS.",
+    slug: "servidor-web",
+    area: "Aplicación",
+    title: "Servidor web seguro",
+    risks: [
+      "Revelar la tecnología y versión del servidor a un atacante.",
+      "Clickjacking, sniffing de tipos MIME y scripts inyectados (XSS).",
+      "Tráfico sin cifrar o degradado a HTTP.",
     ],
     applied: [
       {
@@ -285,15 +274,13 @@ export const CLASSES: ClassInfo[] = [
     ],
   },
   {
-    slug: "nac-dmz",
-    label: "Semana 6",
-    date: "6 oct 2026",
-    title: "NAC y cortafuegos por zonas (DMZ)",
-    pdf: "Semana 6 Fundamentos de NAC y Cortafuegos",
-    concepts: [
-      "Zonas de confianza y DMZ para los servicios expuestos a internet.",
-      "Control de admisión a la red (NAC): solo entran dispositivos identificados.",
-      "Cortafuegos perimetral y de host combinados.",
+    slug: "zonas-dmz",
+    area: "Red",
+    title: "Zonas, DMZ y admisión a la red",
+    risks: [
+      "Servicios internos expuestos directamente a internet.",
+      "Equipos no identificados que se conectan a servicios internos.",
+      "Depender de una sola capa de cortafuegos.",
     ],
     applied: [
       {
@@ -326,15 +313,13 @@ export const CLASSES: ClassInfo[] = [
     ],
   },
   {
-    slug: "devsecops",
-    label: "Sesión 7",
-    date: "13 oct 2026",
-    title: "DevSecOps: seguridad en el pipeline",
-    pdf: "Sesión 7 Sistemas de Comunicación y Seguridad Informática",
-    concepts: [
-      "Integrar la seguridad en CI/CD con GitHub Actions.",
-      "Escaneo de vulnerabilidades y secretos con Trivy.",
-      "Romper el build (exit-code 1) ante hallazgos CRITICAL/HIGH.",
+    slug: "pipeline",
+    area: "Desarrollo",
+    title: "Seguridad en el pipeline (DevSecOps)",
+    risks: [
+      "Desplegar imágenes con vulnerabilidades conocidas.",
+      "Dependencias o acciones de terceros manipuladas (cadena de suministro).",
+      "Secretos publicados en el repositorio.",
     ],
     applied: [
       {
@@ -362,15 +347,13 @@ export const CLASSES: ClassInfo[] = [
     ],
   },
   {
-    slug: "pentesting",
-    label: "Sesión 8",
-    date: "20 oct 2026",
-    title: "Pentesting e inyección SQL",
-    pdf: "Sesión 8 Pentesting y SQL Injection",
-    concepts: [
-      "Reconocimiento con nmap: puertos y versiones (-sV).",
-      "Búsqueda de vulnerabilidades conocidas con --script vuln.",
-      "Inyección SQL: entradas que alteran una consulta construida concatenando texto.",
+    slug: "superficie-de-ataque",
+    area: "Aplicación",
+    title: "Superficie de ataque y validación de entradas",
+    risks: [
+      "Puertos y versiones visibles para un reconocimiento externo.",
+      "Software con vulnerabilidades conocidas.",
+      "Inyección: entradas que se interpretan como código o consulta.",
     ],
     applied: [
       {
@@ -403,21 +386,19 @@ export const CLASSES: ClassInfo[] = [
       "El panel no ejecuta escaneos ofensivos: muestra la superficie que encontraría un escaneo externo a partir de la configuración real y de los puertos en escucha.",
   },
   {
-    slug: "dos-mitigacion",
-    label: "Sesión 9 y 10",
-    date: "27 oct 2026",
-    title: "Denegación de servicio y mitigación",
-    pdf: "Sesión 9 y 10 Sistemas de Comunicación y Seguridad Informática",
-    concepts: [
-      "Simular carga y DoS con ApacheBench (ab -n -c).",
-      "Limitar peticiones con limit_req (rate=5r/s burst=10 nodelay) y responder 429.",
-      "Limitar conexiones simultáneas y recursos por proceso.",
+    slug: "denegacion-de-servicio",
+    area: "Disponibilidad",
+    title: "Protección contra denegación de servicio",
+    risks: [
+      "Saturación del servidor con muchas peticiones (DoS).",
+      "Fuerza bruta contra el login.",
+      "Un servicio que consume toda la memoria o los procesos de la máquina.",
     ],
     applied: [
       {
         title: "Límite de peticiones en Nginx",
         detail:
-          "zona_defensa: 5 peticiones/s por IP con ráfaga de 10 sin retraso, igual que en el laboratorio; 20 conexiones por IP. Los ficheros estáticos de Next.js tienen una zona más amplia para que cargar una página no agote el límite.",
+          "zona_defensa: 5 peticiones/s por IP con ráfaga de 10 sin retraso; 20 conexiones por IP. Los ficheros estáticos de Next.js tienen una zona más amplia para que cargar una página no agote el límite.",
         files: ["vm-app/nginx/default.conf"],
       },
       {
@@ -441,16 +422,14 @@ export const CLASSES: ClassInfo[] = [
       "El panel no genera carga contra el servidor: comprueba el límite en la configuración efectiva de Nginx (nginx -T) y cuenta las respuestas 429 reales de los últimos 10 minutos.",
   },
   {
-    slug: "bastionado",
-    label: "3 nov 2026",
-    date: "3 nov 2026",
-    title: "Bastionado como mitigación de riesgos",
-    pdf: "Bastionado como mitigación de riesgos",
-    concepts: [
-      "Reducir la superficie de ataque: menos servicios, paquetes y puertos.",
-      "Parches al día y configuración segura por defecto.",
-      "SSH solo con claves, sin root y con intentos limitados.",
-      "Ajustes del kernel, auditoría y sincronización de hora.",
+    slug: "bastionado-sistema",
+    area: "Sistema",
+    title: "Bastionado del sistema",
+    risks: [
+      "Servicios, paquetes y puertos innecesarios que amplían la superficie de ataque.",
+      "Vulnerabilidades sin parchear.",
+      "Acceso SSH por contraseña o como root.",
+      "Robo de credenciales de la nube desde la máquina (SSRF a metadatos).",
     ],
     applied: [
       {
@@ -499,6 +478,6 @@ export const CLASSES: ClassInfo[] = [
   },
 ];
 
-export function classBySlug(slug: string) {
-  return CLASSES.find((c) => c.slug === slug);
+export function controlBySlug(slug: string) {
+  return CONTROLS.find((c) => c.slug === slug);
 }
